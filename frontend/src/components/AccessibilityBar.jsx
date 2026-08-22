@@ -11,7 +11,18 @@ const TEXT_STEPS = [
  * as the first tab stop after the skip link, because a user who needs larger
  * text needs it before they can read anything else.
  */
-export default function AccessibilityBar({ readAloud, onToggleReadAloud, ttsSupported }) {
+const LANGUAGES = [
+  { label: "English", value: "en" },
+  { label: "ಕನ್ನಡ", value: "kn" },
+];
+
+export default function AccessibilityBar({
+  readAloud,
+  onToggleReadAloud,
+  ttsSupported,
+  language,
+  onChangeLanguage,
+}) {
   const [step, setStep] = useState(1);
   const [highContrast, setHighContrast] = useState(false);
 
@@ -27,8 +38,22 @@ export default function AccessibilityBar({ readAloud, onToggleReadAloud, ttsSupp
   }, [highContrast]);
 
   return (
-    <div className="a11y-bar" role="group" aria-label="Display and reading options">
-      <span className="group-label" id="text-size-label">
+    <div className="a11y-bar" role="group" aria-label="Display, language and reading options">
+      <span className="group-label">Language</span>
+      {LANGUAGES.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          className="chip"
+          lang={option.value}
+          aria-pressed={language === option.value}
+          onClick={() => onChangeLanguage(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
+
+      <span className="group-label" style={{ marginLeft: "0.75rem" }} id="text-size-label">
         Text size
       </span>
       {TEXT_STEPS.map((option) => (

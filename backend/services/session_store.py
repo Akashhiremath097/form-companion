@@ -38,7 +38,7 @@ def get_field(field_id: str) -> Optional[Dict[str, Any]]:
     return next((f for f in get_fields() if f["id"] == field_id), None)
 
 
-def create_session() -> str:
+def create_session(language: str = "en") -> str:
     """Start a new form session and return its id."""
     session_id = str(uuid.uuid4())
     with _lock:
@@ -46,8 +46,21 @@ def create_session() -> str:
             "answers": {},
             "skipped": set(),
             "history": [],
+            "language": language,
         }
     return session_id
+
+
+def get_language(session_id: str) -> str:
+    """The language the assistant should speak for this session."""
+    return _require(session_id).get("language", "en")
+
+
+def set_language(session_id: str, language: str) -> None:
+    """Switch languages mid-session; answers already given are unaffected."""
+    session = _require(session_id)
+    with _lock:
+        session["language"] = language
 
 
 def _require(session_id: str) -> Dict[str, Any]:

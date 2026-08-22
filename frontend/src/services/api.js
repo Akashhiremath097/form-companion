@@ -26,7 +26,17 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  startSession: () => request("/api/sessions", { method: "POST" }),
+  startSession: (language = "en") =>
+    request("/api/sessions", {
+      method: "POST",
+      body: JSON.stringify({ language }),
+    }),
+
+  setLanguage: (sessionId, language) =>
+    request(`/api/sessions/${sessionId}/language`, {
+      method: "POST",
+      body: JSON.stringify({ language }),
+    }),
 
   sendAnswer: (sessionId, reply) =>
     request(`/api/sessions/${sessionId}/answer`, {

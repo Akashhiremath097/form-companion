@@ -16,8 +16,9 @@ export default function App() {
   const [complete, setComplete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [readAloud, setReadAloud] = useState(false);
+  const [language, setLanguage] = useState("en");
 
-  const speech = useSpeech();
+  const speech = useSpeech(language);
   const { speak, stopSpeaking, speaking } = speech;
   const startedRef = useRef(false);
 
@@ -41,7 +42,7 @@ export default function App() {
     (async () => {
       setBusy(true);
       try {
-        const data = await api.startSession();
+        const data = await api.startSession(language);
         setSessionId(data.session_id);
         setFormTitle(data.form_title);
         setCurrentFieldId(data.current_field?.id ?? null);
@@ -114,6 +115,22 @@ export default function App() {
     }
   };
 
+  const handleChangeLanguage = async (next) => {
+    if (next === language) return;
+    setLanguage(next);
+    if (!sessionId) return;
+
+    setBusy(true);
+    try {
+      const data = await api.setLanguage(sessionId, next);
+      applyResponse(data);
+    } catch (error) {
+      pushMessage("error", error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleRepeat = () => {
     if (speaking) {
       stopSpeaking();
@@ -143,6 +160,8 @@ export default function App() {
           readAloud={readAloud}
           onToggleReadAloud={() => setReadAloud((value) => !value)}
           ttsSupported={speech.ttsSupported}
+          language={language}
+          onChangeLanguage={handleChangeLanguage}
         />
 
         <main id="main" className="workspace">

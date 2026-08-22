@@ -24,8 +24,17 @@ router = APIRouter(prefix="/api", tags=["chat"])
 # ---------------------------------------------------------------------------
 
 
+class CreateSessionRequest(BaseModel):
+    language: str = Field(default="en", pattern="^(en|kn)$")
+
+
+class SetLanguageRequest(BaseModel):
+    language: str = Field(..., pattern="^(en|kn)$")
+
+
 class SessionCreated(BaseModel):
     session_id: str
+    language: str
     form_title: str
     message: str
     current_field: Optional[Dict[str, Any]]
@@ -113,6 +122,7 @@ def _advance(session_id: str, prefix: str = "") -> AnswerResponse:
         next_field,
         is_first=(progress["answered"] + progress["skipped"] == 0),
         answered_count=progress["answered"],
+        language=session_store.get_language(session_id),
     )
     session_store.append_history(session_id, "assistant", question)
 
@@ -131,24 +141,40 @@ def _advance(session_id: str, prefix: str = "") -> AnswerResponse:
 # ---------------------------------------------------------------------------
 
 
+GREETINGS = {
+    "en": (
+        "Hello. I am going to help you fill in the {title}. "
+        "I will ask one thing at a time, and you can answer however feels natural. "
+        "If any question is confusing, ask me to explain it. "
+        "The form itself will be filled in English."
+    ),
+    "kn": (
+        "ನಮಸ್ಕಾರ. ನಾನು ನಿಮಗೆ {title} ಭರ್ತಿ ಮಾಡಲು ಸಹಾಯ ಮಾಡುತ್ತೇನೆ. "
+        "ಒಂದೊಂದೇ ಪ್ರಶ್ನೆ ಕೇಳುತ್ತೇನೆ, ನೀವು ನಿಮ್ಮ ಸ್ವಂತ ಮಾತಿನಲ್ಲಿ ಉತ್ತರಿಸಬಹುದು. "
+        "ಯಾವುದೇ ಪ್ರಶ್ನೆ ಗೊಂದಲವಾದರೆ ವಿವರಿಸಲು ಕೇಳಿ. "
+        "ಅರ್ಜಿಯನ್ನು ಇಂಗ್ಲಿಷ್\u200cನಲ್ಲಿ ಭರ್ತಿ ಮಾಡಲಾಗುತ್ತದೆ."
+    ),
+}
+
+
 @router.post("/sessions", response_model=SessionCreated)
-def create_session() -> SessionCreated:
-    session_id = session_store.create_session()
+def create_session(request: CreateSessionRequest | None = None) -> SessionCreated:
+    language = request.language if request else "en"
+    session_id = session_store.create_session(language)
     schema = session_store.load_schema()
     first_field = session_store.next_unfilled_field(session_id)
 
-    greeting = (
-        f"Hello. I am going to help you fill in the {schema['title']}. "
-        "I will ask one thing at a time, and you can answer however feels natural. "
-        "If any question is confusing, ask me to explain it."
+    greeting = GREETINGS.get(language, GREETINGS["en"]).format(title=schema["title"])
+    question = llm_service.generate_question(
+        first_field, is_first=True, answered_count=0, language=language
     )
-    question = llm_service.generate_question(first_field, is_first=True, answered_count=0)
     message = f"{greeting}\n\n{question}"
 
     session_store.append_history(session_id, "assistant", message)
 
     return SessionCreated(
         session_id=session_id,
+        language=language,
         form_title=schema["title"],
         message=message,
         current_field=_public_field(first_field),
@@ -174,7 +200,9 @@ def submit_answer(session_id: str, request: AnswerRequest) -> AnswerResponse:
     session_store.append_history(session_id, "user", request.reply)
 
     # 1. LLM extracts a clean value from natural language
-    extracted = llm_service.extract_value(field, request.reply)
+    extracted = llm_service.extract_value(
+        field, request.reply, language=session_store.get_language(session_id)
+    )
 
     # 2. Explicit skip on an optional field
     if extracted["skipped"]:
@@ -237,7 +265,9 @@ def simplify_current_field(session_id: str) -> SimplifyResponse:
     if field is None:
         raise HTTPException(status_code=400, detail="The form is already complete.")
 
-    explanation = llm_service.simplify_field(field)
+    explanation = llm_service.simplify_field(
+        field, language=session_store.get_language(session_id)
+    )
     session_store.append_history(session_id, "assistant", explanation)
 
     return SimplifyResponse(field_id=field["id"], explanation=explanation)
@@ -264,6 +294,14 @@ def reset_field(session_id: str, request: ResetFieldRequest) -> AnswerResponse:
 
     session_store.reset_field(session_id, request.field_id)
     return _advance(session_id, prefix=f"Let us redo your {field['label'].lower()}.")
+
+
+@router.post("/sessions/{session_id}/language", response_model=AnswerResponse)
+def set_language(session_id: str, request: SetLanguageRequest) -> AnswerResponse:
+    """Switch languages mid-session and re-ask the current question."""
+    _guard(session_id)
+    session_store.set_language(session_id, request.language)
+    return _advance(session_id)
 
 
 @router.get("/sessions/{session_id}/history")

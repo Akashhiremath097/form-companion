@@ -8,7 +8,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * Both degrade silently on unsupported browsers; the caller checks
  * `ttsSupported` / `sttSupported` to decide whether to show controls.
  */
-export function useSpeech() {
+const SPEECH_LOCALES = {
+  en: "en-IN",
+  kn: "kn-IN",
+};
+
+export function useSpeech(language = "en") {
   const [speaking, setSpeaking] = useState(false);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
@@ -30,14 +35,14 @@ export function useSpeech() {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.95;
       utterance.pitch = 1;
-      utterance.lang = "en-IN";
+      utterance.lang = SPEECH_LOCALES[language] || "en-IN";
       utterance.onstart = () => setSpeaking(true);
       utterance.onend = () => setSpeaking(false);
       utterance.onerror = () => setSpeaking(false);
 
       window.speechSynthesis.speak(utterance);
     },
-    [ttsSupported]
+    [ttsSupported, language]
   );
 
   const stopSpeaking = useCallback(() => {
@@ -50,7 +55,7 @@ export function useSpeech() {
     if (!sttSupported || listening) return;
 
     const recognition = new SpeechRecognition();
-    recognition.lang = "en-IN";
+    recognition.lang = SPEECH_LOCALES[language] || "en-IN";
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     recognition.continuous = false;
@@ -67,7 +72,7 @@ export function useSpeech() {
 
     recognitionRef.current = recognition;
     recognition.start();
-  }, [SpeechRecognition, sttSupported, listening]);
+  }, [SpeechRecognition, sttSupported, listening, language]);
 
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop();

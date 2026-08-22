@@ -70,6 +70,36 @@ def _extract_json(raw: str) -> Optional[Dict[str, Any]]:
 # Public API
 # ---------------------------------------------------------------------------
 
+
+# ---------------------------------------------------------------------------
+# Language support
+#
+# The assistant can converse in Kannada, but the form itself is always filled
+# in English: Indian banks require the submitted data in Latin script. So the
+# question and explanation prompts switch language, while the extraction prompt
+# is always told to output English and transliterate anything given in Kannada.
+# ---------------------------------------------------------------------------
+
+SUPPORTED_LANGUAGES = {
+    "en": "English",
+    "kn": "Kannada",
+}
+
+LANGUAGE_INSTRUCTIONS = {
+    "en": "Write your reply in English.",
+    "kn": (
+        "Write your reply in Kannada, using the Kannada script. "
+        "Keep the language simple and everyday, the way a bank clerk in Bengaluru "
+        "would speak to a customer. Do not use formal literary Kannada. "
+        "Technical terms with no common Kannada equivalent may stay in English."
+    ),
+}
+
+
+def language_instruction(language: str) -> str:
+    return LANGUAGE_INSTRUCTIONS.get(language, LANGUAGE_INSTRUCTIONS["en"])
+
+
 ASK_SYSTEM = """You are a warm, patient assistant helping someone fill out an official form.
 The person may have low literacy, a visual impairment, or may simply find forms stressful.
 
@@ -82,7 +112,9 @@ Rules:
 - Reply with plain text only. No markdown, no bullet points, no emoji."""
 
 
-def generate_question(field: Dict[str, Any], is_first: bool, answered_count: int) -> str:
+def generate_question(
+    field: Dict[str, Any], is_first: bool, answered_count: int, language: str = "en"
+) -> str:
     """
     Produce the conversational prompt for the next field.
     Falls back to the field label if the LLM is unavailable.
@@ -98,7 +130,9 @@ def generate_question(field: Dict[str, Any], is_first: bool, answered_count: int
     if field.get("options"):
         user_prompt += f"Valid choices: {', '.join(field['options'])}\n"
 
-    result = _complete(ASK_SYSTEM, user_prompt, max_tokens=120)
+    user_prompt += f"\n{language_instruction(language)}\n"
+
+    result = _complete(ASK_SYSTEM, user_prompt, max_tokens=220)
     if result:
         return result
 
@@ -120,11 +154,15 @@ Cleaning rules:
 - Dates: output in DD/MM/YYYY format with forward slashes and zero-padded day and month. "3rd August 2005" becomes "03/08/2005". "15 March 2004" becomes "15/03/2004". Never output digits without slashes.
 - PIN codes: digits only.
 - Names and addresses: fix obvious capitalisation, keep the person's own wording.
+- ALWAYS output the value in English using Latin script, even when the person replies in Kannada or another language. Transliterate names and places rather than translating them: "ಆಕಾಶ" becomes "Akash", "ಬೆಂಗಳೂರು" becomes "Bengaluru". For fixed-choice fields, map to the English option exactly as written in the list.
+- Recognise refusals in any language. In Kannada, replies such as "ಬೇಡ", "ಇಲ್ಲ", or "ಬಿಟ್ಟುಬಿಡಿ" mean they are declining, so set skipped to true.
 - Extract ONLY the value itself, never the surrounding sentence. If they say "Hello, my name is Akash" the value is "Akash". If they say "I live in Bengaluru" the value is "Bengaluru". Strip greetings, filler and trailing punctuation.
 - If the field has a fixed list of choices, map their answer to the closest choice exactly as written in the list."""
 
 
-def extract_value(field: Dict[str, Any], user_reply: str) -> Dict[str, Any]:
+def extract_value(
+    field: Dict[str, Any], user_reply: str, language: str = "en"
+) -> Dict[str, Any]:
     """
     Turn a free-text reply into a structured field value.
     Falls back to using the raw reply verbatim if the LLM is unavailable.
@@ -136,6 +174,12 @@ def extract_value(field: Dict[str, Any], user_reply: str) -> Dict[str, Any]:
     if field.get("options"):
         user_prompt += f"Valid choices: {', '.join(field['options'])}\n"
     user_prompt += f"\nThe person replied: \"{user_reply}\""
+
+    if language != "en":
+        user_prompt += (
+            f"\nThe person is speaking {SUPPORTED_LANGUAGES.get(language, language)}. "
+            "Output the extracted value in English regardless.\n"
+        )
 
     raw = _complete(EXTRACT_SYSTEM, user_prompt, max_tokens=200)
     parsed = _extract_json(raw) if raw else None
@@ -169,7 +213,7 @@ Rules:
 - Plain text only. No markdown, no bullets."""
 
 
-def simplify_field(field: Dict[str, Any]) -> str:
+def simplify_field(field: Dict[str, Any], language: str = "en") -> str:
     """Plain-language explanation of a field. Falls back to the stored help text."""
     user_prompt = (
         f"Field: {field['label']}\n"
@@ -179,5 +223,7 @@ def simplify_field(field: Dict[str, Any]) -> str:
         user_prompt += f"Choices offered: {', '.join(field['options'])}\n"
     user_prompt += "\nExplain this field simply."
 
-    result = _complete(SIMPLIFY_SYSTEM, user_prompt, max_tokens=200)
+    user_prompt += f"\n{language_instruction(language)}\n"
+
+    result = _complete(SIMPLIFY_SYSTEM, user_prompt, max_tokens=300)
     return result or field["help_text"]
