@@ -18,6 +18,7 @@ export function useSpeech(language = "en") {
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [voiceAvailable, setVoiceAvailable] = useState(true);
+  const [voicesLoaded, setVoicesLoaded] = useState(false);
   const recognitionRef = useRef(null);
 
   const ttsSupported =
@@ -92,7 +93,11 @@ export function useSpeech(language = "en") {
     const checkVoices = () => {
       const target = (SPEECH_LOCALES[language] || "en-IN").slice(0, 2);
       const voices = window.speechSynthesis.getVoices();
+      // getVoices() is empty on first paint in most browsers and fills in
+      // asynchronously, so an early check would wrongly report every language
+      // as unsupported.
       if (voices.length === 0) return;
+      setVoicesLoaded(true);
       setVoiceAvailable(voices.some((v) => v.lang.toLowerCase().startsWith(target)));
     };
 
@@ -114,7 +119,7 @@ export function useSpeech(language = "en") {
     stopSpeaking,
     speaking,
     ttsSupported,
-    voiceAvailable,
+    voiceAvailable: voicesLoaded ? voiceAvailable : true,
     startListening,
     stopListening,
     listening,

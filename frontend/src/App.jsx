@@ -26,7 +26,15 @@ export default function App() {
   const startedRef = useRef(false);
 
   const pushMessage = useCallback((role, content) => {
-    setMessages((current) => [...current, { role, content }]);
+    setMessages((current) => {
+      // Guard against the same assistant message landing twice. React 18
+      // StrictMode double-invokes effects in development, and a duplicated
+      // question is confusing for anyone, but especially for someone using a
+      // screen reader who hears the whole thing read out again.
+      const last = current[current.length - 1];
+      if (last && last.role === role && last.content === content) return current;
+      return [...current, { role, content }];
+    });
   }, []);
 
   const announce = useCallback(
