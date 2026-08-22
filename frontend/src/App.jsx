@@ -118,6 +118,7 @@ export default function App() {
   const handleChangeLanguage = async (next) => {
     if (next === language) return;
     setLanguage(next);
+    setReadAloud(false);
     if (!sessionId) return;
 
     setBusy(true);
@@ -160,6 +161,7 @@ export default function App() {
           readAloud={readAloud}
           onToggleReadAloud={() => setReadAloud((value) => !value)}
           ttsSupported={speech.ttsSupported}
+          voiceAvailable={speech.voiceAvailable}
           language={language}
           onChangeLanguage={handleChangeLanguage}
         />

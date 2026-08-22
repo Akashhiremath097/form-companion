@@ -17,6 +17,7 @@ export function useSpeech(language = "en") {
   const [speaking, setSpeaking] = useState(false);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [voiceAvailable, setVoiceAvailable] = useState(true);
   const recognitionRef = useRef(null);
 
   const ttsSupported =
@@ -81,6 +82,26 @@ export function useSpeech(language = "en") {
 
   const clearTranscript = useCallback(() => setTranscript(""), []);
 
+  // The Web Speech API can only speak languages the device has a voice for.
+  // Kannada voices are not bundled with most desktop browsers, so we check
+  // rather than let read-aloud fail silently, which would leave a screen-reader
+  // user waiting for audio that never arrives.
+  useEffect(() => {
+    if (!ttsSupported) return;
+
+    const checkVoices = () => {
+      const target = (SPEECH_LOCALES[language] || "en-IN").slice(0, 2);
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length === 0) return;
+      setVoiceAvailable(voices.some((v) => v.lang.toLowerCase().startsWith(target)));
+    };
+
+    checkVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", checkVoices);
+    return () =>
+      window.speechSynthesis.removeEventListener("voiceschanged", checkVoices);
+  }, [language, ttsSupported]);
+
   useEffect(() => {
     return () => {
       recognitionRef.current?.abort?.();
@@ -93,6 +114,7 @@ export function useSpeech(language = "en") {
     stopSpeaking,
     speaking,
     ttsSupported,
+    voiceAvailable,
     startListening,
     stopListening,
     listening,

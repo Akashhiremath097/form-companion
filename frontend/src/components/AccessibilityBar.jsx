@@ -20,6 +20,7 @@ export default function AccessibilityBar({
   readAloud,
   onToggleReadAloud,
   ttsSupported,
+  voiceAvailable,
   language,
   onChangeLanguage,
 }) {
@@ -80,7 +81,13 @@ export default function AccessibilityBar({
         High contrast
       </button>
 
-      {ttsSupported && (
+      {ttsSupported && !voiceAvailable && (
+        <span className="a11y-note" role="status">
+          Read-aloud is not available for this language on your device.
+        </span>
+      )}
+
+      {ttsSupported && voiceAvailable && (
         <>
           <span className="group-label" style={{ marginLeft: "0.75rem" }}>
             Sound

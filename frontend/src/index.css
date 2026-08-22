@@ -456,3 +456,12 @@ body {
   padding-left: 0.85rem;
   max-width: 70ch;
 }
+
+.a11y-note {
+  font-size: 0.85rem;
+  color: var(--skipped);
+  background: var(--skipped-bg);
+  border: 1px solid var(--skipped);
+  border-radius: 4px;
+  padding: 0.3rem 0.7rem;
+}
