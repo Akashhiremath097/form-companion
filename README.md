@@ -1,3 +1,13 @@
+---
+title: Form Companion
+emoji: 📝
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Form Companion
 
 Conversational form filling for people who face visual, cognitive, or literacy barriers.
