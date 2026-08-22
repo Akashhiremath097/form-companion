@@ -1,9 +1,16 @@
+
 """Quick end-to-end check of the chat routes. Run: python smoke_test.py"""
+
+from dotenv import load_dotenv
+load_dotenv()
+
 import sys
 sys.path.insert(0, ".")
 
 from fastapi.testclient import TestClient
 import main
+...
+
 
 client = TestClient(main.app)
 
