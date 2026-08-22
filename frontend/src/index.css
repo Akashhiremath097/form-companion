@@ -1,42 +1,67 @@
-@import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap");
 
 /*
-  Atkinson Hyperlegible is used throughout deliberately: it was designed by the
-  Braille Institute to maximise character distinction for low-vision readers.
-  On an accessibility product it is a functional choice, not a stylistic one.
+  Design note
+  -----------
+  This product sits between two worlds: the cold machinery of official paperwork
+  and a patient voice helping someone through it. The layout dramatises that
+  rather than flattening it. The conversation panel is warm, soft-edged and
+  generous. The form panel is deliberately institutional: section bands, ruled
+  boxes, numbered fields, a form code in the margin, rubber-stamp status marks.
+  Watching that severe document fill itself in is the point of the product, so
+  it is also the thing the design spends its boldness on.
+
+  Atkinson Hyperlegible is used throughout, in one weight range and wide tracking
+  for institutional labels. It was drawn by the Braille Institute to maximise
+  character distinction for low-vision readers, so on an accessibility product it
+  is a functional choice before it is a stylistic one. Everything here holds at
+  least 4.5:1 contrast, and the high-contrast mode pushes further.
 */
 
 :root {
-  --ink: #14213d;
-  --ink-soft: #3d4a68;
-  --paper: #fbfaf7;
+  --ink: #17163a;
+  --ink-soft: #4a4869;
+  --ink-faint: #6f6d8a;
+  --paper: #faf8f3;
   --surface: #ffffff;
-  --rule: #d9d5cc;
-  --accent: #1d4ed8;
-  --accent-dark: #1435a1;
-  --filled: #0f6b3f;
-  --filled-bg: #e6f4ec;
-  --skipped: #8a5a00;
-  --skipped-bg: #fdf3e0;
-  --error: #a4161a;
-  --error-bg: #fdeaea;
+  --rule: #d8d3c6;
+  --rule-soft: #eae6dc;
+
+  --official: #2d2a6e;
+  --official-dim: #4b4894;
+  --seal: #a02334;
+
+  --accent: #2d2a6e;
+  --accent-dark: #1d1b52;
+
+  --filled: #14663d;
+  --filled-bg: #e8f3ec;
+  --skipped: #8a5000;
+  --skipped-bg: #fbf1e2;
+  --error: #a02334;
+  --error-bg: #fdecee;
 
   --step: 1;
-  --font-base: calc(1.0625rem * var(--step));
+  --shadow-soft: 0 1px 2px rgba(23, 22, 58, 0.06), 0 4px 14px rgba(23, 22, 58, 0.05);
+  --shadow-doc: 0 1px 0 rgba(23, 22, 58, 0.08), 0 10px 28px rgba(23, 22, 58, 0.09);
 
   font-family: "Atkinson Hyperlegible", system-ui, -apple-system, sans-serif;
-  font-size: var(--font-base);
+  font-size: calc(1.0625rem * var(--step));
   color: var(--ink);
   background: var(--paper);
 }
 
-/* High-contrast mode, toggled from the accessibility bar */
 :root[data-contrast="high"] {
   --ink: #000000;
   --ink-soft: #000000;
+  --ink-faint: #000000;
   --paper: #ffffff;
   --surface: #ffffff;
   --rule: #000000;
+  --rule-soft: #000000;
+  --official: #000000;
+  --official-dim: #000000;
+  --seal: #8b0000;
   --accent: #0000cc;
   --accent-dark: #000099;
   --filled: #004d26;
@@ -45,6 +70,8 @@
   --skipped-bg: #ffffff;
   --error: #8b0000;
   --error-bg: #ffffff;
+  --shadow-soft: none;
+  --shadow-doc: none;
 }
 
 * {
@@ -54,15 +81,21 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--paper);
   line-height: 1.6;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(45, 42, 110, 0.05), transparent 42%),
+    var(--paper);
+  background-attachment: fixed;
 }
 
-/* Focus must always be visible — keyboard users are a core audience here. */
+:root[data-contrast="high"] body {
+  background: #ffffff;
+}
+
 :focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -92,64 +125,83 @@ body {
   top: 0;
   background: var(--ink);
   color: var(--paper);
-  padding: 0.75rem 1.25rem;
+  padding: 0.8rem 1.3rem;
   z-index: 100;
   text-decoration: none;
+  font-weight: 700;
 }
 
 .skip-link:focus {
   left: 0;
 }
 
-/* ---------- Layout ---------- */
+/* ---------- Shell ---------- */
 
 .app {
-  max-width: 1180px;
+  max-width: 1220px;
   margin: 0 auto;
-  padding: 1.5rem 1.25rem 3rem;
+  padding: 2rem 1.35rem 4rem;
 }
 
 .masthead {
-  border-bottom: 2px solid var(--ink);
-  padding-bottom: 1rem;
-  margin-bottom: 1.25rem;
+  position: relative;
+  padding: 0 0 1.35rem;
+  margin-bottom: 1.1rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.masthead::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 4.5rem;
+  height: 3px;
+  background: var(--seal);
 }
 
 .masthead h1 {
-  font-size: 1.6rem;
-  margin: 0 0 0.25rem;
-  letter-spacing: -0.01em;
+  font-size: 2.1rem;
+  line-height: 1.1;
+  margin: 0 0 0.4rem;
+  letter-spacing: -0.03em;
 }
 
 .masthead p {
   margin: 0;
   color: var(--ink-soft);
-  font-size: 0.95rem;
-  max-width: 60ch;
+  font-size: 1rem;
+  max-width: 56ch;
 }
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  gap: 1.35rem;
   align-items: start;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 940px) {
   .workspace {
     grid-template-columns: 1fr;
+  }
+
+  .masthead h1 {
+    font-size: 1.6rem;
   }
 }
 
 .panel {
   background: var(--surface);
   border: 1px solid var(--rule);
-  border-radius: 6px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
 }
 
 .panel-head {
-  padding: 0.85rem 1.1rem;
-  border-bottom: 1px solid var(--rule);
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid var(--rule-soft);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -157,81 +209,156 @@ body {
 }
 
 .panel-head h2 {
-  font-size: 1rem;
+  font-size: 0.76rem;
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.16em;
+  color: var(--ink-faint);
 }
 
-/* ---------- Accessibility bar ---------- */
+/* ---------- Control bar ---------- */
 
 .a11y-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.4rem;
   align-items: center;
-  padding: 0.65rem 0;
-  margin-bottom: 1.25rem;
-  border-bottom: 1px solid var(--rule);
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 1.35rem;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: var(--shadow-soft);
 }
 
 .a11y-bar .group-label {
-  font-size: 0.8rem;
+  font-size: 0.66rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-soft);
-  margin-right: 0.35rem;
+  letter-spacing: 0.15em;
+  color: var(--ink-faint);
+  margin-right: 0.3rem;
 }
 
 .chip {
   font: inherit;
-  font-size: 0.875rem;
-  padding: 0.4rem 0.8rem;
+  font-size: 0.86rem;
+  padding: 0.36rem 0.85rem;
   border: 1px solid var(--rule);
   background: var(--surface);
   color: var(--ink);
   border-radius: 999px;
   cursor: pointer;
+  transition: background 130ms ease, border-color 130ms ease, color 130ms ease;
 }
 
 .chip[aria-pressed="true"] {
-  background: var(--ink);
-  color: var(--paper);
-  border-color: var(--ink);
+  background: var(--official);
+  color: #ffffff;
+  border-color: var(--official);
 }
 
 .chip:hover:not([aria-pressed="true"]) {
-  border-color: var(--ink);
+  border-color: var(--official);
+  background: var(--paper);
 }
 
-/* ---------- Chat ---------- */
+.a11y-note {
+  font-size: 0.8rem;
+  color: var(--skipped);
+  background: var(--skipped-bg);
+  border: 1px solid var(--skipped);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+}
+
+/* ---------- Upload ---------- */
+
+.upload-bar {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.35rem;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.upload-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--official);
+}
+
+.upload-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-width: 58ch;
+  padding-left: 0.4rem;
+}
+
+.upload-copy strong {
+  font-size: 0.98rem;
+}
+
+.upload-copy span {
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+.upload-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.upload-name {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+  max-width: 16ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Conversation ---------- */
 
 .transcript {
-  padding: 1.1rem;
-  min-height: 340px;
-  max-height: 52vh;
+  padding: 1.35rem 1.2rem;
+  min-height: 360px;
+  max-height: 54vh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 1.1rem;
 }
 
 .bubble {
-  max-width: 88%;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
+  max-width: 86%;
+  padding: 0.85rem 1.05rem;
   white-space: pre-wrap;
+  font-size: 0.99rem;
 }
 
 .bubble.assistant {
   background: var(--paper);
-  border: 1px solid var(--rule);
+  border: 1px solid var(--rule-soft);
+  border-radius: 14px 14px 14px 4px;
   align-self: flex-start;
 }
 
 .bubble.user {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--official);
+  color: #ffffff;
+  border-radius: 14px 14px 4px 14px;
   align-self: flex-end;
 }
 
@@ -239,58 +366,75 @@ body {
   background: var(--error-bg);
   border: 1px solid var(--error);
   color: var(--error);
+  border-radius: 14px 14px 14px 4px;
   align-self: flex-start;
 }
 
 .bubble-role {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.63rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  opacity: 0.7;
-  margin-bottom: 0.2rem;
+  letter-spacing: 0.16em;
+  opacity: 0.62;
+  margin-bottom: 0.3rem;
+  font-weight: 700;
 }
 
 .thinking {
   align-self: flex-start;
-  color: var(--ink-soft);
+  color: var(--ink-faint);
   font-style: italic;
+  font-size: 0.92rem;
+  margin: 0;
+  padding-left: 0.2rem;
 }
 
 .composer {
-  border-top: 1px solid var(--rule);
-  padding: 0.9rem 1.1rem;
+  border-top: 1px solid var(--rule-soft);
+  background: var(--paper);
+  padding: 1rem 1.2rem;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.7rem;
 }
 
 .composer-row {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .composer textarea {
   font: inherit;
   flex: 1;
   resize: vertical;
-  min-height: 3rem;
-  padding: 0.65rem 0.8rem;
+  min-height: 3.2rem;
+  padding: 0.7rem 0.9rem;
   border: 1px solid var(--rule);
-  border-radius: 6px;
-  background: var(--paper);
+  border-radius: 10px;
+  background: var(--surface);
   color: var(--ink);
+  transition: border-color 130ms ease;
+}
+
+.composer textarea:hover:not(:disabled) {
+  border-color: var(--official-dim);
+}
+
+.composer textarea::placeholder {
+  color: var(--ink-faint);
 }
 
 .btn {
   font: inherit;
   font-weight: 700;
-  padding: 0.6rem 1.1rem;
-  border-radius: 6px;
+  padding: 0.62rem 1.2rem;
+  border-radius: 9px;
   border: 1px solid transparent;
   cursor: pointer;
-  background: var(--accent);
+  background: var(--official);
   color: #ffffff;
+  transition: background 130ms ease, border-color 130ms ease;
+  white-space: nowrap;
 }
 
 .btn:hover:not(:disabled) {
@@ -298,7 +442,7 @@ body {
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
@@ -311,13 +455,13 @@ body {
 
 .btn.secondary:hover:not(:disabled) {
   background: var(--paper);
-  border-color: var(--ink);
+  border-color: var(--official);
 }
 
 .btn.listening {
-  background: var(--error);
+  background: var(--seal);
   color: #ffffff;
-  border-color: var(--error);
+  border-color: var(--seal);
 }
 
 .composer-actions {
@@ -326,101 +470,82 @@ body {
   gap: 0.5rem;
 }
 
-/* ---------- Form preview ---------- */
+/* ---------- The document ----------
+   The right panel is the signature element: a severe official form that fills
+   itself in while the conversation stays warm and unhurried on the left. */
 
-.progress-note {
-  font-size: 0.85rem;
-  color: var(--ink-soft);
+.panel.document {
+  border-radius: 4px;
+  border-color: var(--rule);
+  box-shadow: var(--shadow-doc);
+}
+
+.doc-masthead {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.2rem 0.95rem;
+  background: var(--official);
+  color: #ffffff;
+}
+
+:root[data-contrast="high"] .doc-masthead {
+  background: #000000;
+}
+
+.doc-eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.doc-masthead h2 {
+  margin: 0;
+  font-size: 1.06rem;
+  line-height: 1.2;
+  letter-spacing: -0.012em;
+  color: #ffffff;
+}
+
+.doc-progress {
+  font-size: 0.74rem;
+  font-weight: 700;
   white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 3px;
+  padding: 0.2rem 0.55rem;
+  letter-spacing: 0.04em;
 }
 
 .progress-rail {
-  height: 6px;
-  background: var(--rule);
+  height: 4px;
+  background: var(--rule-soft);
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
   background: var(--filled);
-  transition: width 320ms ease;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-.privacy-note {
-  margin-top: 1.25rem;
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-  border-left: 3px solid var(--rule);
-  padding-left: 0.85rem;
-  max-width: 70ch;
-}
-
-/* ---------- Form preview as a document ----------
-   The right panel is styled as a printed application form rather than a status
-   list: lettered sections, numbered fields and ruled value boxes. Seeing the
-   actual document take shape is more reassuring than an abstract checklist. */
-
-.panel.document {
-  background: var(--surface);
-}
-
-.doc-masthead {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.9rem 1.1rem;
-  border-bottom: 2px solid var(--ink);
-}
-
-.doc-eyebrow {
-  margin: 0 0 0.15rem;
-  font-size: 0.68rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-}
-
-.doc-masthead h2 {
-  margin: 0;
-  font-size: 1.02rem;
-  line-height: 1.25;
-  letter-spacing: -0.005em;
-}
-
-.doc-progress {
-  font-size: 0.8rem;
-  color: var(--ink-soft);
-  white-space: nowrap;
-  border: 1px solid var(--rule);
-  border-radius: 3px;
-  padding: 0.15rem 0.5rem;
+  transition: width 340ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .doc-body {
-  padding: 0.35rem 0 0;
-  max-height: 60vh;
+  max-height: 58vh;
   overflow-y: auto;
+  background:
+    repeating-linear-gradient(
+      to right,
+      transparent 0 calc(100% - 1px),
+      var(--rule-soft) calc(100% - 1px) 100%
+    );
 }
 
 .doc-section {
   border-bottom: 1px solid var(--rule);
-  padding-bottom: 0.5rem;
 }
 
 .doc-section:last-child {
@@ -430,36 +555,44 @@ body {
 .doc-section-head {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   margin: 0;
-  padding: 0.5rem 1.1rem;
+  padding: 0.55rem 1.2rem;
   background: var(--paper);
-  border-bottom: 1px solid var(--rule);
-  font-size: 0.78rem;
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.17em;
+  color: var(--ink-soft);
 }
 
 .doc-section-letter {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.35rem;
-  height: 1.35rem;
-  background: var(--ink);
-  color: var(--paper);
+  width: 1.4rem;
+  height: 1.4rem;
+  background: var(--official);
+  color: #ffffff;
   border-radius: 2px;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
+  letter-spacing: 0;
+  flex-shrink: 0;
+}
+
+:root[data-contrast="high"] .doc-section-letter {
+  background: #000000;
 }
 
 .doc-field {
-  padding: 0.6rem 1.1rem;
-  border-left: 4px solid transparent;
+  padding: 0.7rem 1.2rem;
+  border-left: 3px solid transparent;
+  transition: background 180ms ease, border-color 180ms ease;
 }
 
 .doc-field.current {
-  background: #eef2ff;
-  border-left-color: var(--accent);
+  background: #f2f1fb;
+  border-left-color: var(--official);
 }
 
 :root[data-contrast="high"] .doc-field.current {
@@ -470,35 +603,39 @@ body {
 .doc-field-head {
   display: flex;
   align-items: baseline;
-  gap: 0.4rem;
-  margin-bottom: 0.25rem;
+  gap: 0.45rem;
+  margin-bottom: 0.3rem;
 }
 
 .doc-field-number {
-  font-size: 0.8rem;
-  color: var(--ink-soft);
+  font-size: 0.74rem;
+  color: var(--ink-faint);
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .doc-field-label {
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   color: var(--ink-soft);
   flex: 1;
   min-width: 0;
+  letter-spacing: 0.01em;
 }
 
 .doc-field-label abbr {
-  color: var(--error);
+  color: var(--seal);
   text-decoration: none;
+  font-weight: 700;
 }
 
 .doc-edit {
   font: inherit;
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   background: none;
   border: none;
-  color: var(--accent);
+  color: var(--official);
   text-decoration: underline;
+  text-underline-offset: 2px;
   cursor: pointer;
   padding: 0.1rem 0.2rem;
   flex-shrink: 0;
@@ -509,8 +646,8 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 0.6rem;
-  min-height: 2.1rem;
-  padding: 0.35rem 0.6rem;
+  min-height: 2.35rem;
+  padding: 0.4rem 0.65rem;
   border: 1px solid var(--rule);
   border-radius: 2px;
   background: var(--paper);
@@ -518,39 +655,46 @@ body {
 
 .doc-field.pending .doc-field-box {
   border-style: dashed;
+  border-color: var(--rule);
 }
 
 .doc-field.filled .doc-field-box {
   background: var(--surface);
   border-color: var(--filled);
+  border-left-width: 3px;
 }
 
 .doc-field.skipped .doc-field-box {
   border-color: var(--skipped);
+  border-left-width: 3px;
 }
 
 .doc-value {
   font-weight: 700;
   word-break: break-word;
   min-width: 0;
+  font-size: 1rem;
 }
 
 .doc-value.empty {
   font-weight: 400;
-  color: var(--ink-soft);
+  color: var(--ink-faint);
   font-style: italic;
+  font-size: 0.9rem;
 }
 
+/* Status reads as a stamp pressed onto the page. Never colour alone: the text
+   and the border both carry the meaning. */
 .doc-stamp {
-  font-size: 0.66rem;
+  font-size: 0.6rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  padding: 0.1rem 0.4rem;
+  letter-spacing: 0.13em;
+  padding: 0.18rem 0.45rem;
   border-radius: 2px;
   white-space: nowrap;
   flex-shrink: 0;
-  border: 1px solid transparent;
+  border: 1.5px solid transparent;
 }
 
 .doc-stamp.filled {
@@ -567,76 +711,55 @@ body {
 
 .doc-stamp.pending {
   background: transparent;
-  color: var(--ink-soft);
+  color: var(--ink-faint);
   border-color: var(--rule);
+  border-style: dashed;
 }
 
 .doc-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 0.75rem;
-  padding: 0.6rem 1.1rem;
-  border-top: 2px solid var(--ink);
-  font-size: 0.78rem;
-  color: var(--ink-soft);
+  padding: 0.85rem 1.2rem;
+  border-top: 2px solid var(--official);
+  background: var(--paper);
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+}
+
+:root[data-contrast="high"] .doc-footer {
+  border-top-color: #000000;
 }
 
 .doc-complete {
   font-weight: 700;
   color: var(--filled);
   background: var(--filled-bg);
-  border: 1px solid var(--filled);
+  border: 1.5px solid var(--filled);
   border-radius: 2px;
-  padding: 0.15rem 0.55rem;
-}
-
-/* ---------- Upload your own form ---------- */
-
-.upload-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.85rem;
-  padding: 0.8rem 1rem;
-  margin-bottom: 1.25rem;
-  background: var(--surface);
-  border: 1px solid var(--rule);
-  border-left: 4px solid var(--accent);
-  border-radius: 4px;
-}
-
-.upload-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  max-width: 60ch;
-}
-
-.upload-copy span {
-  font-size: 0.88rem;
-  color: var(--ink-soft);
-}
-
-.upload-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.upload-name {
-  font-size: 0.82rem;
-  color: var(--ink-soft);
-  max-width: 18ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding: 0.2rem 0.6rem;
+  text-transform: uppercase;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
 }
 
 .doc-download {
-  font-size: 0.82rem;
-  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  padding: 0.45rem 0.9rem;
   text-decoration: none;
   display: inline-block;
+}
+
+/* ---------- Footnote ---------- */
+
+.privacy-note {
+  margin-top: 1.6rem;
+  font-size: 0.84rem;
+  color: var(--ink-faint);
+  border-left: 2px solid var(--rule);
+  padding-left: 0.95rem;
+  max-width: 74ch;
 }
