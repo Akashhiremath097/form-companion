@@ -1,0 +1,458 @@
+@import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap");
+
+/*
+  Atkinson Hyperlegible is used throughout deliberately: it was designed by the
+  Braille Institute to maximise character distinction for low-vision readers.
+  On an accessibility product it is a functional choice, not a stylistic one.
+*/
+
+:root {
+  --ink: #14213d;
+  --ink-soft: #3d4a68;
+  --paper: #fbfaf7;
+  --surface: #ffffff;
+  --rule: #d9d5cc;
+  --accent: #1d4ed8;
+  --accent-dark: #1435a1;
+  --filled: #0f6b3f;
+  --filled-bg: #e6f4ec;
+  --skipped: #8a5a00;
+  --skipped-bg: #fdf3e0;
+  --error: #a4161a;
+  --error-bg: #fdeaea;
+
+  --step: 1;
+  --font-base: calc(1.0625rem * var(--step));
+
+  font-family: "Atkinson Hyperlegible", system-ui, -apple-system, sans-serif;
+  font-size: var(--font-base);
+  color: var(--ink);
+  background: var(--paper);
+}
+
+/* High-contrast mode, toggled from the accessibility bar */
+:root[data-contrast="high"] {
+  --ink: #000000;
+  --ink-soft: #000000;
+  --paper: #ffffff;
+  --surface: #ffffff;
+  --rule: #000000;
+  --accent: #0000cc;
+  --accent-dark: #000099;
+  --filled: #004d26;
+  --filled-bg: #ffffff;
+  --skipped: #5c3d00;
+  --skipped-bg: #ffffff;
+  --error: #8b0000;
+  --error-bg: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--paper);
+  line-height: 1.6;
+}
+
+/* Focus must always be visible — keyboard users are a core audience here. */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.75rem 1.25rem;
+  z-index: 100;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* ---------- Layout ---------- */
+
+.app {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.masthead {
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.masthead h1 {
+  font-size: 1.6rem;
+  margin: 0 0 0.25rem;
+  letter-spacing: -0.01em;
+}
+
+.masthead p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  max-width: 60ch;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+
+.panel-head {
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.panel-head h2 {
+  font-size: 1rem;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ---------- Accessibility bar ---------- */
+
+.a11y-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.65rem 0;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.a11y-bar .group-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  margin-right: 0.35rem;
+}
+
+.chip {
+  font: inherit;
+  font-size: 0.875rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+.chip:hover:not([aria-pressed="true"]) {
+  border-color: var(--ink);
+}
+
+/* ---------- Chat ---------- */
+
+.transcript {
+  padding: 1.1rem;
+  min-height: 340px;
+  max-height: 52vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.bubble {
+  max-width: 88%;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  white-space: pre-wrap;
+}
+
+.bubble.assistant {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  align-self: flex-start;
+}
+
+.bubble.user {
+  background: var(--ink);
+  color: var(--paper);
+  align-self: flex-end;
+}
+
+.bubble.error {
+  background: var(--error-bg);
+  border: 1px solid var(--error);
+  color: var(--error);
+  align-self: flex-start;
+}
+
+.bubble-role {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.7;
+  margin-bottom: 0.2rem;
+}
+
+.thinking {
+  align-self: flex-start;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.composer {
+  border-top: 1px solid var(--rule);
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.composer-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.composer textarea {
+  font: inherit;
+  flex: 1;
+  resize: vertical;
+  min-height: 3rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.btn {
+  font: inherit;
+  font-weight: 700;
+  padding: 0.6rem 1.1rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--accent-dark);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn.secondary {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--rule);
+  font-weight: 400;
+}
+
+.btn.secondary:hover:not(:disabled) {
+  background: var(--paper);
+  border-color: var(--ink);
+}
+
+.btn.listening {
+  background: var(--error);
+  color: #ffffff;
+  border-color: var(--error);
+}
+
+.composer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ---------- Form preview ---------- */
+
+.progress-note {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.progress-rail {
+  height: 6px;
+  background: var(--rule);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--filled);
+  transition: width 320ms ease;
+}
+
+.field-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.field-row {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid var(--rule);
+  align-items: flex-start;
+}
+
+.field-row:last-child {
+  border-bottom: none;
+}
+
+.field-row.current {
+  background: #eef2ff;
+  border-left: 4px solid var(--accent);
+  padding-left: calc(1.1rem - 4px);
+}
+
+:root[data-contrast="high"] .field-row.current {
+  background: #ffffff;
+}
+
+.field-status {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 5.5rem;
+  text-align: center;
+  border: 1px solid transparent;
+}
+
+.field-status.filled {
+  background: var(--filled-bg);
+  color: var(--filled);
+  border-color: var(--filled);
+}
+
+.field-status.skipped {
+  background: var(--skipped-bg);
+  color: var(--skipped);
+  border-color: var(--skipped);
+}
+
+.field-status.pending {
+  background: var(--paper);
+  color: var(--ink-soft);
+  border-color: var(--rule);
+}
+
+.field-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-label {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  display: block;
+}
+
+.field-value {
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.field-value.empty {
+  font-weight: 400;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.field-edit {
+  font: inherit;
+  font-size: 0.8rem;
+  background: none;
+  border: none;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.1rem 0.2rem;
+  flex-shrink: 0;
+}
+
+.done-banner {
+  padding: 1rem 1.1rem;
+  background: var(--filled-bg);
+  border-top: 2px solid var(--filled);
+  color: var(--filled);
+  font-weight: 700;
+}
+
+.privacy-note {
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  border-left: 3px solid var(--rule);
+  padding-left: 0.85rem;
+  max-width: 70ch;
+}

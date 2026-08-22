@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+
+# Environment — never commit real keys
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
