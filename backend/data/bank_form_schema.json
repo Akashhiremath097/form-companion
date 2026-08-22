@@ -12,7 +12,7 @@
       "validation": {
         "min_length": 2,
         "max_length": 100,
-        "pattern": "^[A-Za-z\\s.]+$"
+        "pattern": "^[A-Za-z\\s.'-]+$"
       },
       "question_hint": "Ask for their full name as written on their Aadhaar card."
     },

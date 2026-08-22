@@ -117,9 +117,10 @@ Return ONLY a JSON object, no prose and no code fences, with these keys:
 
 Cleaning rules:
 - Phone numbers: digits only, drop +91, spaces and dashes.
-- Dates: convert to DD/MM/YYYY.
+- Dates: output in DD/MM/YYYY format with forward slashes and zero-padded day and month. "3rd August 2005" becomes "03/08/2005". "15 March 2004" becomes "15/03/2004". Never output digits without slashes.
 - PIN codes: digits only.
 - Names and addresses: fix obvious capitalisation, keep the person's own wording.
+- Extract ONLY the value itself, never the surrounding sentence. If they say "Hello, my name is Akash" the value is "Akash". If they say "I live in Bengaluru" the value is "Bengaluru". Strip greetings, filler and trailing punctuation.
 - If the field has a fixed list of choices, map their answer to the closest choice exactly as written in the list."""
 
 

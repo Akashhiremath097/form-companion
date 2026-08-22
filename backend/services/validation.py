@@ -11,6 +11,55 @@ from datetime import date, datetime
 from typing import Any, Dict, Optional, Tuple
 
 
+MONTHS = {
+    "jan":1,"january":1,"feb":2,"february":2,"mar":3,"march":3,"apr":4,"april":4,
+    "may":5,"jun":6,"june":6,"jul":7,"july":7,"aug":8,"august":8,"sep":9,"sept":9,
+    "september":9,"oct":10,"october":10,"nov":11,"november":11,"dec":12,"december":12,
+}
+
+
+def loose_parse_date(text):
+    """Parse a date out of natural language, e.g. "my dob is 3rd August 2005"."""
+    if not text:
+        return None
+    t = str(text).lower().strip()
+    t = re.sub(r"(\d+)(st|nd|rd|th)\b", r"\1", t)
+    t = re.sub(r"[,]", " ", t)
+
+    m = re.search(r"\b(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})\b", t)
+    if m:
+        d, mo, y = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        if y < 100:
+            y += 2000 if y < 50 else 1900
+        try:
+            return datetime(y, mo, d).date()
+        except ValueError:
+            pass
+
+    m = re.search(r"\b(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})\b", t)
+    if m:
+        try:
+            return datetime(int(m.group(1)), int(m.group(2)), int(m.group(3))).date()
+        except ValueError:
+            pass
+
+    names = "|".join(MONTHS.keys())
+    m = re.search(rf"\b(\d{{1,2}})\s+({names})\s+(\d{{4}})\b", t)
+    if m:
+        try:
+            return datetime(int(m.group(3)), MONTHS[m.group(2)], int(m.group(1))).date()
+        except ValueError:
+            pass
+
+    m = re.search(rf"\b({names})\s+(\d{{1,2}})\s+(\d{{4}})\b", t)
+    if m:
+        try:
+            return datetime(int(m.group(3)), MONTHS[m.group(1)], int(m.group(2))).date()
+        except ValueError:
+            pass
+
+    return None
+
 def _friendly_length_error(label: str, value: str, rules: Dict[str, Any]) -> Optional[str]:
     min_len = rules.get("min_length")
     max_len = rules.get("max_length")
@@ -27,13 +76,7 @@ def _friendly_length_error(label: str, value: str, rules: Dict[str, Any]) -> Opt
 
 def _validate_date(value: str, rules: Dict[str, Any]) -> Tuple[bool, Optional[str], Optional[str]]:
     """Returns (is_valid, error_message, normalised_value)."""
-    parsed = None
-    for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d/%m/%y"):
-        try:
-            parsed = datetime.strptime(value.strip(), fmt).date()
-            break
-        except ValueError:
-            continue
+    parsed = loose_parse_date(value)
 
     if parsed is None:
         return False, "I could not read that as a date. Could you tell me the day, month and year?", None
@@ -55,7 +98,7 @@ PATTERN_MESSAGES = {
     "mobile_number": "That does not look like a valid Indian mobile number. It should be 10 digits starting with 6, 7, 8 or 9.",
     "pincode": "That does not look like a valid PIN code. It should be six digits.",
     "email": "That does not look like a complete email address. It needs an @ symbol and a domain, like name@example.com.",
-    "full_name": "Please use only letters for your name, without numbers or symbols.",
+    "full_name": "I could not read that as a name. Could you tell me just your name, as written on your Aadhaar card?",
 }
 
 
