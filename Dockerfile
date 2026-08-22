@@ -1,4 +1,4 @@
-﻿# HuggingFace Spaces Docker deployment.
+# HuggingFace Spaces Docker deployment.
 # Builds the React frontend, then serves it as static files from the same
 # FastAPI process that serves the API. Single origin means no CORS setup.
 
@@ -28,4 +28,4 @@ COPY --from=frontend-build /build/dist ./static
 ENV PORT=7860
 EXPOSE 7860
 
-CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD python -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-7860}
