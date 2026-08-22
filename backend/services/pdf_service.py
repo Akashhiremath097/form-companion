@@ -158,7 +158,9 @@ def infer_schema(fields: List[Dict[str, Any]], title: str) -> Dict[str, Any]:
     )
     user_prompt = f"Form title: {title}\n\nFields:\n{listing}"
 
-    raw = llm_service._complete(SCHEMA_SYSTEM, user_prompt, max_tokens=2400)
+    # Describing a whole form is a single large generation, so it needs far
+    # longer than the per-question default before we give up on it.
+    raw = llm_service._complete(SCHEMA_SYSTEM, user_prompt, max_tokens=2400, timeout=45)
     parsed = _extract_json_array(raw) if raw else None
 
     by_name = {f["pdf_name"]: f for f in fields}
@@ -217,6 +219,23 @@ def _normalise(item: Dict[str, Any], raw_field: Dict[str, Any]) -> Dict[str, Any
     return field
 
 
+# Words that mark a field as one a form almost always insists on. Used only in
+# the fallback path: without this every field would default to optional, and a
+# person could skip their own name.
+REQUIRED_HINTS = (
+    "name", "dob", "birth", "mobile", "phone", "address", "city",
+    "pin", "zip", "postal", "state", "gender", "nationality",
+)
+OPTIONAL_HINTS = ("email", "nominee", "optional", "alternate", "secondary", "fax")
+
+
+def _guess_required(pdf_name: str) -> bool:
+    lowered = pdf_name.lower()
+    if any(h in lowered for h in OPTIONAL_HINTS):
+        return False
+    return any(h in lowered for h in REQUIRED_HINTS)
+
+
 def _fallback_field(raw_field: Dict[str, Any]) -> Dict[str, Any]:
     """A plain but working field description, used when the LLM gives us nothing."""
     label = _humanise(raw_field["pdf_name"])
@@ -225,7 +244,7 @@ def _fallback_field(raw_field: Dict[str, Any]) -> Dict[str, Any]:
         "pdf_name": raw_field["pdf_name"],
         "label": label,
         "type": "select" if raw_field["kind"] in ("select", "checkbox") else "text",
-        "required": False,
+        "required": _guess_required(raw_field["pdf_name"]),
         "help_text": f"The {label.lower()} asked for on this form.",
         "question_hint": f"Ask for their {label.lower()}.",
         "validation": {},

@@ -30,13 +30,20 @@ def get_client() -> Groq:
     return _client
 
 
-def _complete(system_prompt: str, user_prompt: str, max_tokens: int = 400) -> Optional[str]:
+def _complete(
+    system_prompt: str,
+    user_prompt: str,
+    max_tokens: int = 400,
+    timeout: Optional[int] = None,
+) -> Optional[str]:
     """
     Single completion call. Returns None on any failure rather than raising,
     so callers can fall back to a deterministic non-LLM path.
     """
     try:
         client = get_client()
+        if timeout:
+            client = client.with_options(timeout=timeout)
         response = client.chat.completions.create(
             model=MODEL,
             max_tokens=max_tokens,
