@@ -1,0 +1,122 @@
+{
+  "form_id": "bank_account_opening",
+  "title": "Savings Account Opening Form",
+  "description": "Standard savings account application for Indian retail banks",
+  "fields": [
+    {
+      "id": "full_name",
+      "label": "Full Name (as per Aadhaar)",
+      "type": "text",
+      "required": true,
+      "help_text": "Your complete name exactly as printed on your Aadhaar card, including any middle name.",
+      "validation": {
+        "min_length": 2,
+        "max_length": 100,
+        "pattern": "^[A-Za-z\\s.]+$"
+      },
+      "question_hint": "Ask for their full name as written on their Aadhaar card."
+    },
+    {
+      "id": "date_of_birth",
+      "label": "Date of Birth",
+      "type": "date",
+      "required": true,
+      "help_text": "The day, month and year you were born. The bank uses this to confirm you are old enough to open an account.",
+      "validation": {
+        "format": "DD/MM/YYYY",
+        "min_age": 18
+      },
+      "question_hint": "Ask for their date of birth. Accept natural phrasing like '5th March 2001' and convert it."
+    },
+    {
+      "id": "mobile_number",
+      "label": "Mobile Number",
+      "type": "tel",
+      "required": true,
+      "help_text": "The phone number where the bank will send your account alerts and one-time passwords.",
+      "validation": {
+        "pattern": "^[6-9][0-9]{9}$",
+        "length": 10
+      },
+      "question_hint": "Ask for their 10-digit mobile number. Strip spaces, dashes and the +91 country code."
+    },
+    {
+      "id": "email",
+      "label": "Email Address",
+      "type": "email",
+      "required": false,
+      "help_text": "Your email address, if you have one. The bank sends statements here. You can skip this if you do not use email.",
+      "validation": {
+        "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+      },
+      "question_hint": "Ask for their email address, and make clear it is optional and can be skipped."
+    },
+    {
+      "id": "address_line",
+      "label": "Residential Address",
+      "type": "textarea",
+      "required": true,
+      "help_text": "Where you currently live. Include house or flat number, street name, and area or locality.",
+      "validation": {
+        "min_length": 10,
+        "max_length": 250
+      },
+      "question_hint": "Ask where they live. Prompt gently for house number, street, and locality if the answer is too short."
+    },
+    {
+      "id": "city",
+      "label": "City",
+      "type": "text",
+      "required": true,
+      "help_text": "The city or town where you live.",
+      "validation": {
+        "min_length": 2,
+        "max_length": 60
+      },
+      "question_hint": "Ask which city or town they live in."
+    },
+    {
+      "id": "pincode",
+      "label": "PIN Code",
+      "type": "text",
+      "required": true,
+      "help_text": "The six-digit postal code for your area. You can find it on any letter posted to your address.",
+      "validation": {
+        "pattern": "^[1-9][0-9]{5}$",
+        "length": 6
+      },
+      "question_hint": "Ask for their six-digit PIN code. Mention where they can find it if they are unsure."
+    },
+    {
+      "id": "occupation",
+      "label": "Occupation",
+      "type": "select",
+      "required": true,
+      "options": ["Salaried", "Self-Employed", "Student", "Homemaker", "Retired", "Other"],
+      "help_text": "What you do for a living. Pick the closest match — the bank uses this to understand your income pattern.",
+      "validation": {},
+      "question_hint": "Ask what they do for work. Map their free-text answer to the closest option in the list."
+    },
+    {
+      "id": "account_type",
+      "label": "Account Type",
+      "type": "select",
+      "required": true,
+      "options": ["Regular Savings", "Zero Balance Savings", "Senior Citizen Savings"],
+      "help_text": "Regular Savings needs a minimum balance. Zero Balance Savings has no minimum but fewer free services. Senior Citizen accounts are for people aged 60 and above and offer higher interest.",
+      "validation": {},
+      "question_hint": "Explain the three options in plain language first, then ask which they want."
+    },
+    {
+      "id": "nominee_name",
+      "label": "Nominee Name",
+      "type": "text",
+      "required": false,
+      "help_text": "The person who would receive the money in this account if something happened to you. Usually a spouse, child, or parent. You can add this later if you prefer.",
+      "validation": {
+        "max_length": 100
+      },
+      "question_hint": "Explain what a nominee is in simple terms, then ask if they want to name one. Make clear it is optional."
+    }
+  ]
+}
