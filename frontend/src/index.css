@@ -763,3 +763,125 @@ body {
   padding-left: 0.95rem;
   max-width: 74ch;
 }
+
+/* ---------- Scan an ID ----------
+   Extracted values are shown for confirmation before anything reaches the form.
+   OCR is a suggestion, never an authority. */
+
+.scan-bar {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.35rem;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.scan-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--seal);
+}
+
+.scan-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-width: 58ch;
+  padding-left: 0.4rem;
+}
+
+.scan-copy strong {
+  font-size: 0.98rem;
+}
+
+.scan-copy span {
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+.scan-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.scan-message {
+  flex-basis: 100%;
+  margin: 0;
+  padding-left: 0.4rem;
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+}
+
+.scan-message.error {
+  color: var(--error);
+}
+
+.scan-review {
+  flex-basis: 100%;
+  margin-top: 0.3rem;
+  padding: 0.9rem 1rem;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+}
+
+.scan-review-head {
+  margin: 0 0 0.6rem;
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+}
+
+.scan-list {
+  list-style: none;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.scan-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--rule-soft);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.scan-item input {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+  accent-color: var(--official);
+}
+
+.scan-item-label {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  min-width: 12ch;
+}
+
+.scan-item-value {
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.scan-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}

@@ -63,6 +63,15 @@ class ResetFieldRequest(BaseModel):
     field_id: str
 
 
+class PrefillItem(BaseModel):
+    field_id: str
+    value: str
+
+
+class PrefillRequest(BaseModel):
+    values: List[PrefillItem]
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -359,6 +368,54 @@ def set_language(session_id: str, request: SetLanguageRequest) -> AnswerResponse
     _guard(session_id)
     session_store.set_language(session_id, request.language)
     return _advance(session_id)
+
+
+@router.post("/sessions/{session_id}/prefill", response_model=AnswerResponse)
+def prefill(session_id: str, request: PrefillRequest) -> AnswerResponse:
+    """
+    Accept values read off a scanned ID document.
+
+    Every value still goes through the same validation as a typed answer. OCR is
+    unreliable, and a wrong date of birth is no more acceptable because a camera
+    produced it than because someone mistyped it. Values that fail validation are
+    dropped rather than reported: the person is then simply asked for that field
+    in the normal way.
+    """
+    _guard(session_id)
+
+    accepted = 0
+    for item in request.values:
+        field = session_store.session_field(session_id, item.field_id)
+        if field is None:
+            continue
+
+        is_valid, _, normalised = validation.validate_field(field, item.value)
+        if not is_valid or normalised is None:
+            continue
+
+        session_store.record_answer(session_id, field["id"], normalised)
+        accepted += 1
+
+    if accepted == 0:
+        return AnswerResponse(
+            accepted=False,
+            message=_translate_error(
+                session_id,
+                "I could not read anything usable from that image. Let us carry on "
+                "and I will ask you directly.",
+            ),
+            current_field=_public_field(session_store.next_unfilled_field(session_id)),
+            preview=session_store.build_preview(session_id),
+            progress=session_store.progress(session_id),
+            complete=session_store.is_complete(session_id),
+        )
+
+    prefix = _translate_error(
+        session_id,
+        f"I have filled in {accepted} field{'s' if accepted != 1 else ''} from your "
+        "document. Please check them on the right and change anything that is wrong.",
+    )
+    return _advance(session_id, prefix=prefix)
 
 
 @router.get("/sessions/{session_id}/history")

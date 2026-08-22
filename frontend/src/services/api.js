@@ -1,9 +1,4 @@
-// In production the API is served from the same origin as the frontend, so an
-// empty base URL is correct. In dev the Vite server is on :5173 and the API on
-// :8000, hence the explicit fallback. VITE_API_URL may legitimately be an empty
-// string, so ?? is used here rather than || which would treat it as unset.
-const BASE_URL =
-  import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:8000" : "");
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 async function request(path, options = {}) {
   const response = await fetch(`${BASE_URL}${path}`, {
@@ -54,6 +49,12 @@ export const api = {
 
     return response.json();
   },
+
+  prefill: (sessionId, values) =>
+    request(`/api/sessions/${sessionId}/prefill`, {
+      method: "POST",
+      body: JSON.stringify({ values }),
+    }),
 
   downloadUrl: (sessionId) => `${BASE_URL}/api/sessions/${sessionId}/download`,
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import AccessibilityBar from "./components/AccessibilityBar";
 import FormUpload from "./components/FormUpload";
+import IdScan from "./components/IdScan";
 import ChatWidget from "./components/ChatWidget";
 import FormPreview from "./components/FormPreview";
 import { useSpeech } from "./hooks/useSpeech";
@@ -26,15 +27,7 @@ export default function App() {
   const startedRef = useRef(false);
 
   const pushMessage = useCallback((role, content) => {
-    setMessages((current) => {
-      // Guard against the same assistant message landing twice. React 18
-      // StrictMode double-invokes effects in development, and a duplicated
-      // question is confusing for anyone, but especially for someone using a
-      // screen reader who hears the whole thing read out again.
-      const last = current[current.length - 1];
-      if (last && last.role === role && last.content === content) return current;
-      return [...current, { role, content }];
-    });
+    setMessages((current) => [...current, { role, content }]);
   }, []);
 
   const announce = useCallback(
@@ -164,6 +157,19 @@ export default function App() {
     }
   };
 
+  const handlePrefill = async (values) => {
+    if (!sessionId) return;
+    setBusy(true);
+    try {
+      const data = await api.prefill(sessionId, values);
+      applyResponse(data);
+    } catch (error) {
+      pushMessage("error", error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleRepeat = () => {
     if (speaking) {
       stopSpeaking();
@@ -198,6 +204,13 @@ export default function App() {
         />
 
         <FormUpload onUpload={handleUpload} busy={uploading} disabled={busy} />
+
+        <IdScan
+          preview={preview}
+          onConfirm={handlePrefill}
+          busy={busy}
+          language={language}
+        />
 
         <main id="main" className="workspace">
           <ChatWidget
