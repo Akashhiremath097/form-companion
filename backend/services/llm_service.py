@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 
 from groq import Groq
 
-MODEL = "llama-3.3-70b-versatile"
+MODEL = "openai/gpt-oss-120b"
 TIMEOUT_SECONDS = 12
 
 _client: Optional[Groq] = None
