@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 
 import { matchToFields, parseIdText } from "../lib/idParser";
-import { pdfFirstPageToBlob } from "../lib/pdfImage";
 
 /**
  * Read an ID document with on-device OCR and offer the details for the form.
@@ -18,7 +17,6 @@ export default function IdScan({ preview, onConfirm, busy, language }) {
   const [progress, setProgress] = useState(0);
   const [suggestions, setSuggestions] = useState([]);
   const [error, setError] = useState(null);
-  const [stage, setStage] = useState(null);
 
   const runOcr = async (file) => {
     setStatus("working");
@@ -27,17 +25,8 @@ export default function IdScan({ preview, onConfirm, busy, language }) {
     setSuggestions([]);
 
     try {
-      // A scanned ID arrives as a PDF about as often as a photo, so the PDF is
-      // rendered to an image first and both paths then share the same OCR.
-      let source = file;
-      if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
-        setStage("Opening your document…");
-        source = await pdfFirstPageToBlob(file);
-      }
-
-      setStage(null);
       const { default: Tesseract } = await import("tesseract.js");
-      const { data } = await Tesseract.recognize(source, "eng", {
+      const { data } = await Tesseract.recognize(file, "eng", {
         logger: (m) => {
           if (m.status === "recognizing text") {
             setProgress(Math.round(m.progress * 100));
@@ -56,10 +45,7 @@ export default function IdScan({ preview, onConfirm, busy, language }) {
       setSuggestions(matched);
       setStatus("review");
     } catch (err) {
-      setStage(null);
-      setError(
-        "That document could not be read. A clearer, straight-on photo, or a PDF that is not password protected, usually helps."
-      );
+      setError("That image could not be read. A clearer, straight-on photo usually helps.");
       setStatus("idle");
     }
   };
@@ -93,8 +79,8 @@ export default function IdScan({ preview, onConfirm, busy, language }) {
       <div className="scan-copy">
         <strong>Have your ID with you?</strong>
         <span>
-          Upload a photo or a PDF of an Aadhaar, PAN or similar card and I will read
-          the details off it. The file stays on your device and is never uploaded.
+          Take a photo of an Aadhaar, PAN or similar card and I will read the details
+          off it. The picture stays on your device and is never uploaded.
         </span>
       </div>
 
@@ -102,7 +88,7 @@ export default function IdScan({ preview, onConfirm, busy, language }) {
         <input
           ref={inputRef}
           type="file"
-          accept="image/*,application/pdf,.pdf"
+          accept="image/*"
           capture="environment"
           onChange={handleChange}
           disabled={busy || status === "working"}
@@ -115,9 +101,7 @@ export default function IdScan({ preview, onConfirm, busy, language }) {
           onClick={() => inputRef.current?.click()}
           disabled={busy || status === "working"}
         >
-          {status === "working"
-            ? stage || `Reading… ${progress}%`
-            : "Scan an ID document"}
+          {status === "working" ? `Reading… ${progress}%` : "Scan an ID document"}
         </button>
       </div>
 
