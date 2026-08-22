@@ -8,6 +8,8 @@ Run locally:
 import os
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from dotenv import load_dotenv
@@ -47,6 +49,24 @@ def health() -> dict:
     }
 
 
-@app.get("/")
-def root() -> dict:
-    return {"service": "Accessible Form Assistant", "docs": "/docs"}
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+
+if os.path.isdir(STATIC_DIR):
+    app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_DIR, "assets")), name="assets")
+
+    @app.get("/")
+    def serve_index() -> FileResponse:
+        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
+    @app.get("/{path:path}")
+    def serve_spa(path: str) -> FileResponse:
+        candidate = os.path.join(STATIC_DIR, path)
+        if path and os.path.isfile(candidate):
+            return FileResponse(candidate)
+        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
+else:
+
+    @app.get("/")
+    def root() -> dict:
+        return {"service": "Accessible Form Assistant", "docs": "/docs"}
