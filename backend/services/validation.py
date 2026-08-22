@@ -120,13 +120,46 @@ def validate_field(field: Dict[str, Any], value: Any) -> Tuple[bool, Optional[st
 
     value = str(value).strip()
 
-    # Select fields must match one of the options
+    # Select fields must resolve to one of the options.
+    #
+    # People rarely type an option back verbatim: they add a full stop, use a
+    # shorter form ("NRE" for "NRE Savings"), or change the word order. Matching
+    # is therefore progressively looser rather than exact-only, so a person is
+    # not stuck repeating themselves at a field they have already answered.
     if field["type"] == "select":
         options = field.get("options", [])
+        if not options:
+            return True, None, value
+
+        cleaned = re.sub(r"[^\w\s]", "", value).strip().lower()
+        cleaned = re.sub(r"\s+", " ", cleaned)
+
+        def norm(text):
+            text = re.sub(r"[^\w\s]", "", str(text)).strip().lower()
+            return re.sub(r"\s+", " ", text)
+
+        # 1. Exact match once punctuation and spacing are normalised
         for option in options:
-            if value.lower() == option.lower():
+            if cleaned == norm(option):
                 return True, None, option
-        readable = ", ".join(options[:-1]) + f" or {options[-1]}" if len(options) > 1 else options[0]
+
+        # 2. One contains the other, e.g. "NRE" for "NRE Savings"
+        matches = [o for o in options if cleaned and (cleaned in norm(o) or norm(o) in cleaned)]
+        if len(matches) == 1:
+            return True, None, matches[0]
+
+        # 3. All the words they gave appear in exactly one option
+        if cleaned:
+            words = set(cleaned.split())
+            word_matches = [o for o in options if words <= set(norm(o).split())]
+            if len(word_matches) == 1:
+                return True, None, word_matches[0]
+
+        readable = (
+            ", ".join(options[:-1]) + f" or {options[-1]}" if len(options) > 1 else options[0]
+        )
+        if matches:
+            return False, f"Did you mean {matches[0]}? Please choose one of: {readable}.", None
         return False, f"Please choose one of these: {readable}.", None
 
     # Dates get their own parser

@@ -41,6 +41,7 @@ export default function FormPreview({
   currentFieldId,
   onEdit,
   complete,
+  downloadUrl,
 }) {
   const total = progress?.total || 1;
   const resolved = (progress?.answered || 0) + (progress?.skipped || 0);
@@ -151,6 +152,11 @@ export default function FormPreview({
 
       <footer className="doc-footer">
         <span>* Required field</span>
+        {downloadUrl && (
+          <a className="btn doc-download" href={downloadUrl} download>
+            Download filled form
+          </a>
+        )}
         {complete && (
           <span className="doc-complete" role="status">
             Ready for review

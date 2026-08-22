@@ -87,18 +87,77 @@ def _guard(session_id: str) -> None:
         raise HTTPException(status_code=404, detail="Session not found or expired.")
 
 
+# Fixed phrases the assistant says outside of an LLM call. These have to be
+# translated here rather than generated, because they wrap or replace LLM output
+# and must appear even when the model is unavailable.
+PHRASES = {
+    "en": {
+        "got_it": "Got it.",
+        "left_blank": "No problem, I have left that blank.",
+        "redo": "Let us redo your {label}.",
+        "required": (
+            "I understand, but the form does need your {label} before it can be "
+            "submitted. Could you share it?"
+        ),
+        "done": (
+            "All done. Every field is filled in. Check the form on the right, and "
+            "tell me if you want to change anything."
+        ),
+        "done_partial": (
+            "All done. I have filled in {answered} fields and left {skipped} blank. "
+            "Check the form on the right, and tell me if you want to change anything."
+        ),
+    },
+    "kn": {
+        "got_it": "\u0cb8\u0cb0\u0cbf.",
+        "left_blank": "\u0caa\u0cb0\u0cb5\u0cbe\u0c97\u0cbf\u0cb2\u0ccd\u0cb2, \u0c85\u0ca6\u0ca8\u0ccd\u0ca8\u0cc1 \u0c96\u0cbe\u0cb2\u0cbf \u0cac\u0cbf\u0c9f\u0ccd\u0c9f\u0cbf\u0ca6\u0ccd\u0ca6\u0cc7\u0ca8\u0cc6.",
+        "redo": "\u0ca8\u0cbf\u0cae\u0ccd\u0cae {label} \u0cae\u0ca4\u0ccd\u0ca4\u0cc6 \u0ca8\u0cae\u0cc2\u0ca6\u0cbf\u0cb8\u0acb\u0ca3.",
+        "required": (
+            "\u0ca4\u0cbf\u0cb3\u0cbf\u0caf\u0cbf\u0ca4\u0cc1, \u0c86\u0ca6\u0cb0\u0cc6 \u0c85\u0cb0\u0ccd\u0c9c\u0cbf\u0c97\u0cc6 \u0ca8\u0cbf\u0cae\u0ccd\u0cae {label} \u0c85\u0c97\u0ca4\u0ccd\u0caf\u0cb5\u0cbf\u0ca6\u0cc6. \u0ca6\u0caf\u0cb5\u0cbf\u0c9f\u0ccd\u0c9f\u0cc1 \u0ca4\u0cbf\u0cb3\u0cbf\u0cb8\u0cbf."
+        ),
+        "done": (
+            "\u0cae\u0cc1\u0c97\u0cbf\u0caf\u0cbf\u0ca4\u0cc1. \u0c8e\u0cb2\u0ccd\u0cb2\u0cbe \u0cb5\u0cbf\u0cb5\u0cb0\u0c97\u0cb3\u0ca8\u0ccd\u0ca8\u0cc2 \u0cad\u0cb0\u0ccd\u0ca4\u0cbf \u0cae\u0cbe\u0ca1\u0cb2\u0cbe\u0c97\u0cbf\u0ca6\u0cc6. "
+            "\u0cac\u0cb2\u0c97\u0ca1\u0cc6 \u0c87\u0cb0\u0cc1\u0cb5 \u0c85\u0cb0\u0ccd\u0c9c\u0cbf\u0caf\u0ca8\u0ccd\u0ca8\u0cc1 \u0ca8\u0ccb\u0ca1\u0cbf, \u0cac\u0ca6\u0cb2\u0cbf\u0cb8\u0cac\u0cc7\u0c95\u0cbe\u0ca6\u0cb0\u0cc6 \u0ca4\u0cbf\u0cb3\u0cbf\u0cb8\u0cbf."
+        ),
+        "done_partial": (
+            "\u0cae\u0cc1\u0c97\u0cbf\u0caf\u0cbf\u0ca4\u0cc1. {answered} \u0cb5\u0cbf\u0cb5\u0cb0\u0c97\u0cb3\u0ca8\u0ccd\u0ca8\u0cc1 \u0cad\u0cb0\u0ccd\u0ca4\u0cbf \u0cae\u0cbe\u0ca1\u0cbf, {skipped} \u0c96\u0cbe\u0cb2\u0cbf \u0cac\u0cbf\u0c9f\u0ccd\u0c9f\u0cbf\u0ca6\u0ccd\u0ca6\u0cc7\u0ca8\u0cc6. "
+            "\u0cac\u0cb2\u0c97\u0ca1\u0cc6 \u0c87\u0cb0\u0cc1\u0cb5 \u0c85\u0cb0\u0ccd\u0c9c\u0cbf\u0caf\u0ca8\u0ccd\u0ca8\u0cc1 \u0ca8\u0ccb\u0ca1\u0cbf, \u0cac\u0ca6\u0cb2\u0cbf\u0cb8\u0cac\u0cc7\u0c95\u0cbe\u0ca6\u0cb0\u0cc6 \u0ca4\u0cbf\u0cb3\u0cbf\u0cb8\u0cbf."
+        ),
+    },
+}
+
+
+def phrase(session_id: str, key: str, **kwargs) -> str:
+    language = session_store.get_language(session_id)
+    table = PHRASES.get(language, PHRASES["en"])
+    return table.get(key, PHRASES["en"][key]).format(**kwargs)
+
+
+def _translate_error(session_id: str, message: str) -> str:
+    """
+    Validation errors are generated in Python and so are always English.
+    Rather than maintain a parallel Kannada string for every rule, we translate
+    the finished message. If the translation call fails the English text still
+    goes out, which is far better than no explanation at all.
+    """
+    language = session_store.get_language(session_id)
+    if language == "en":
+        return message
+
+    translated = llm_service.translate_message(message, language)
+    return translated or message
+
+
 def _completion_message(session_id: str) -> str:
     progress = session_store.progress(session_id)
     if progress["skipped"]:
-        return (
-            f"All done. I have filled in {progress['answered']} fields and left "
-            f"{progress['skipped']} blank. Check the form on the right, and tell me "
-            "if you want to change anything."
+        return phrase(
+            session_id,
+            "done_partial",
+            answered=progress["answered"],
+            skipped=progress["skipped"],
         )
-    return (
-        "All done. Every field is filled in. Check the form on the right, and tell me "
-        "if you want to change anything."
-    )
+    return phrase(session_id, "done")
 
 
 def _advance(session_id: str, prefix: str = "") -> AnswerResponse:
@@ -161,7 +220,7 @@ GREETINGS = {
 def create_session(request: CreateSessionRequest | None = None) -> SessionCreated:
     language = request.language if request else "en"
     session_id = session_store.create_session(language)
-    schema = session_store.load_schema()
+    schema = session_store.session_schema(session_id)
     first_field = session_store.next_unfilled_field(session_id)
 
     greeting = GREETINGS.get(language, GREETINGS["en"]).format(title=schema["title"])
@@ -207,10 +266,7 @@ def submit_answer(session_id: str, request: AnswerRequest) -> AnswerResponse:
     # 2. Explicit skip on an optional field
     if extracted["skipped"]:
         if field.get("required"):
-            message = (
-                f"I understand, but the bank does need your {field['label'].lower()} "
-                "before it can open the account. Could you share it?"
-            )
+            message = phrase(session_id, "required", label=field["label"].lower())
             session_store.append_history(session_id, "assistant", message)
             return AnswerResponse(
                 accepted=False,
@@ -221,7 +277,7 @@ def submit_answer(session_id: str, request: AnswerRequest) -> AnswerResponse:
                 complete=False,
             )
         session_store.record_answer(session_id, field["id"], None, skipped=True)
-        return _advance(session_id, prefix="No problem, I have left that blank.")
+        return _advance(session_id, prefix=phrase(session_id, "left_blank"))
 
     # 3. LLM flagged the reply as unclear
     if extracted["needs_clarification"] and extracted["clarification"]:
@@ -238,6 +294,7 @@ def submit_answer(session_id: str, request: AnswerRequest) -> AnswerResponse:
     # 4. Deterministic validation — the real gatekeeper
     is_valid, error, normalised = validation.validate_field(field, extracted["value"])
     if not is_valid:
+        error = _translate_error(session_id, error)
         session_store.append_history(session_id, "assistant", error)
         return AnswerResponse(
             accepted=False,
@@ -254,7 +311,7 @@ def submit_answer(session_id: str, request: AnswerRequest) -> AnswerResponse:
     else:
         session_store.record_answer(session_id, field["id"], normalised)
 
-    return _advance(session_id, prefix="Got it.")
+    return _advance(session_id, prefix=phrase(session_id, "got_it"))
 
 
 @router.post("/sessions/{session_id}/simplify", response_model=SimplifyResponse)
@@ -277,7 +334,7 @@ def simplify_current_field(session_id: str) -> SimplifyResponse:
 def get_preview(session_id: str) -> Dict[str, Any]:
     _guard(session_id)
     return {
-        "form_title": session_store.load_schema()["title"],
+        "form_title": session_store.session_schema(session_id)["title"],
         "preview": session_store.build_preview(session_id),
         "progress": session_store.progress(session_id),
         "complete": session_store.is_complete(session_id),
@@ -288,12 +345,12 @@ def get_preview(session_id: str) -> Dict[str, Any]:
 def reset_field(session_id: str, request: ResetFieldRequest) -> AnswerResponse:
     _guard(session_id)
 
-    field = session_store.get_field(request.field_id)
+    field = session_store.session_field(session_id, request.field_id)
     if field is None:
         raise HTTPException(status_code=404, detail="No such field on this form.")
 
     session_store.reset_field(session_id, request.field_id)
-    return _advance(session_id, prefix=f"Let us redo your {field['label'].lower()}.")
+    return _advance(session_id, prefix=phrase(session_id, "redo", label=field["label"].lower()))
 
 
 @router.post("/sessions/{session_id}/language", response_model=AnswerResponse)

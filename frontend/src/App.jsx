@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import AccessibilityBar from "./components/AccessibilityBar";
+import FormUpload from "./components/FormUpload";
 import ChatWidget from "./components/ChatWidget";
 import FormPreview from "./components/FormPreview";
 import { useSpeech } from "./hooks/useSpeech";
@@ -17,6 +18,8 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [readAloud, setReadAloud] = useState(false);
   const [language, setLanguage] = useState("en");
+  const [uploading, setUploading] = useState(false);
+  const [isUpload, setIsUpload] = useState(false);
 
   const speech = useSpeech(language);
   const { speak, stopSpeaking, speaking } = speech;
@@ -118,7 +121,6 @@ export default function App() {
   const handleChangeLanguage = async (next) => {
     if (next === language) return;
     setLanguage(next);
-    setReadAloud(false);
     if (!sessionId) return;
 
     setBusy(true);
@@ -129,6 +131,28 @@ export default function App() {
       pushMessage("error", error.message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleUpload = async (file) => {
+    setUploading(true);
+    try {
+      const data = await api.uploadForm(file, language);
+      // A successful upload replaces the whole session, so the transcript
+      // starts again from the new form's first question.
+      setSessionId(data.session_id);
+      setFormTitle(data.form_title);
+      setMessages([{ role: "assistant", content: data.message }]);
+      setPreview(data.preview);
+      setProgress(data.progress);
+      setCurrentFieldId(data.current_field?.id ?? null);
+      setComplete(false);
+      setIsUpload(true);
+      announce(data.message);
+    } catch (error) {
+      pushMessage("error", error.message);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -161,10 +185,11 @@ export default function App() {
           readAloud={readAloud}
           onToggleReadAloud={() => setReadAloud((value) => !value)}
           ttsSupported={speech.ttsSupported}
-          voiceAvailable={speech.voiceAvailable}
           language={language}
           onChangeLanguage={handleChangeLanguage}
         />
+
+        <FormUpload onUpload={handleUpload} busy={uploading} disabled={busy} />
 
         <main id="main" className="workspace">
           <ChatWidget
@@ -184,6 +209,7 @@ export default function App() {
             currentFieldId={currentFieldId}
             onEdit={handleEdit}
             complete={complete}
+            downloadUrl={isUpload && sessionId ? api.downloadUrl(sessionId) : null}
           />
         </main>
 

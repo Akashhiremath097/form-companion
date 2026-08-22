@@ -8,15 +8,11 @@ Run locally:
 import os
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
-from routes import chat
+from routes import chat, forms
 
 app = FastAPI(
     title="Accessible Form Assistant",
@@ -38,6 +34,7 @@ app.add_middleware(
 )
 
 app.include_router(chat.router)
+app.include_router(forms.router)
 
 
 @app.get("/health")
@@ -49,10 +46,23 @@ def health() -> dict:
     }
 
 
+# ---------------------------------------------------------------------------
+# Static frontend
+#
+# In the Docker image the built React app is copied to ./static. When it is
+# present we serve it from this same process, so the frontend and API share an
+# origin and no CORS configuration is needed. Running locally without a build,
+# this block is skipped and the dev server on :5173 talks to us over CORS.
+# ---------------------------------------------------------------------------
+
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
 if os.path.isdir(STATIC_DIR):
-    app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_DIR, "assets")), name="assets")
+    app.mount(
+        "/assets",
+        StaticFiles(directory=os.path.join(STATIC_DIR, "assets")),
+        name="assets",
+    )
 
     @app.get("/")
     def serve_index() -> FileResponse:
@@ -60,6 +70,7 @@ if os.path.isdir(STATIC_DIR):
 
     @app.get("/{path:path}")
     def serve_spa(path: str) -> FileResponse:
+        """Serve a real file if it exists, otherwise fall back to index.html."""
         candidate = os.path.join(STATIC_DIR, path)
         if path and os.path.isfile(candidate):
             return FileResponse(candidate)

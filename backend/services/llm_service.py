@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 
 from groq import Groq
 
-MODEL = "openai/gpt-oss-120b"
+MODEL = "llama-3.3-70b-versatile"
 TIMEOUT_SECONDS = 12
 
 _client: Optional[Groq] = None
@@ -130,9 +130,11 @@ def generate_question(
     if field.get("options"):
         user_prompt += f"Valid choices: {', '.join(field['options'])}\n"
 
-    user_prompt += f"\n{language_instruction(language)}\n"
-
-    result = _complete(ASK_SYSTEM, user_prompt, max_tokens=220)
+    # The instruction goes in the system prompt as well as the user prompt: a
+    # system prompt written entirely in English otherwise pulls the reply back
+    # into English however clearly the user prompt asks for Kannada.
+    system = ASK_SYSTEM + "\n\n" + language_instruction(language)
+    result = _complete(system, user_prompt, max_tokens=220)
     if result:
         return result
 
@@ -151,12 +153,11 @@ Return ONLY a JSON object, no prose and no code fences, with these keys:
 
 Cleaning rules:
 - Phone numbers: digits only, drop +91, spaces and dashes.
-- Dates: output in DD/MM/YYYY format with forward slashes and zero-padded day and month. "3rd August 2005" becomes "03/08/2005". "15 March 2004" becomes "15/03/2004". Never output digits without slashes.
+- Dates: convert to DD/MM/YYYY.
 - PIN codes: digits only.
 - Names and addresses: fix obvious capitalisation, keep the person's own wording.
 - ALWAYS output the value in English using Latin script, even when the person replies in Kannada or another language. Transliterate names and places rather than translating them: "ಆಕಾಶ" becomes "Akash", "ಬೆಂಗಳೂರು" becomes "Bengaluru". For fixed-choice fields, map to the English option exactly as written in the list.
 - Recognise refusals in any language. In Kannada, replies such as "ಬೇಡ", "ಇಲ್ಲ", or "ಬಿಟ್ಟುಬಿಡಿ" mean they are declining, so set skipped to true.
-- Extract ONLY the value itself, never the surrounding sentence. If they say "Hello, my name is Akash" the value is "Akash". If they say "I live in Bengaluru" the value is "Bengaluru". Strip greetings, filler and trailing punctuation.
 - If the field has a fixed list of choices, map their answer to the closest choice exactly as written in the list."""
 
 
@@ -223,7 +224,28 @@ def simplify_field(field: Dict[str, Any], language: str = "en") -> str:
         user_prompt += f"Choices offered: {', '.join(field['options'])}\n"
     user_prompt += "\nExplain this field simply."
 
-    user_prompt += f"\n{language_instruction(language)}\n"
-
-    result = _complete(SIMPLIFY_SYSTEM, user_prompt, max_tokens=300)
+    system = SIMPLIFY_SYSTEM + "\n\n" + language_instruction(language)
+    result = _complete(system, user_prompt, max_tokens=300)
     return result or field["help_text"]
+
+
+TRANSLATE_SYSTEM = """You translate short messages from a form-filling assistant.
+
+Rules:
+- Keep the meaning and the helpful, patient tone exactly.
+- Keep numbers, formats like DD/MM/YYYY, and any option names in Latin script unchanged.
+- Use simple everyday language, not formal literary register.
+- Return only the translated message. No quotes, no notes, no explanation."""
+
+
+def translate_message(message: str, language: str) -> Optional[str]:
+    """Translate a message generated in Python. Returns None on failure."""
+    if language == "en" or not message:
+        return message
+
+    target = SUPPORTED_LANGUAGES.get(language, language)
+    return _complete(
+        TRANSLATE_SYSTEM,
+        f"Translate into {target}:\n\n{message}",
+        max_tokens=250,
+    )
