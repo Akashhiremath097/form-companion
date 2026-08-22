@@ -101,10 +101,25 @@ export function useSpeech(language = "en") {
       setVoiceAvailable(voices.some((v) => v.lang.toLowerCase().startsWith(target)));
     };
 
+    // voiceschanged does not fire reliably across browsers, and getVoices() is
+    // empty on first paint, so poll briefly until the list populates rather
+    // than trusting a single check or a single event.
     checkVoices();
     window.speechSynthesis.addEventListener("voiceschanged", checkVoices);
-    return () =>
+
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      checkVoices();
+      if (window.speechSynthesis.getVoices().length > 0 || tries > 20) {
+        clearInterval(timer);
+      }
+    }, 150);
+
+    return () => {
+      clearInterval(timer);
       window.speechSynthesis.removeEventListener("voiceschanged", checkVoices);
+    };
   }, [language, ttsSupported]);
 
   useEffect(() => {
